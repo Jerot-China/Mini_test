@@ -1,0 +1,7 @@
+[2018-08-01 18:52:30,421] [DEBUG] Starting new HTTPS connection (1): hmall-test.huazhu.com:443
+[2018-08-01 18:52:30,476] [DEBUG] https://hmall-test.huazhu.com:443 "POST /miniAppsApi/login/getApiToken HTTP/1.1" 302 0
+[2018-08-01 18:52:30,477] [DEBUG] Starting new HTTP connection (1): 127.0.0.1:8888
+[2018-08-01 18:52:30,493] [DEBUG] http://127.0.0.1:8888 "GET http://union.huazhu.com/wechat/autoauth?redirect=https://hmall-test.huazhu.com/miniAppsApi/login/getApiToken HTTP/1.1" 302 591
+[2018-08-01 18:52:30,496] [DEBUG] Starting new HTTPS connection (1): open.weixin.qq.com:443
+[2018-08-01 18:52:30,595] [DEBUG] https://open.weixin.qq.com:443 "GET /connect/oauth2/authorize?appid=wx9a40654fe6ac86f8&redirect_uri=http%3A%2F%2Funion.huazhu.com%2F%2FWechat%2FAuth%3Ftype%3Dpage%26platformName%3DWechat%26redirect%3Dhttps%253a%252f%252fhmall-test.huazhu.com%252fminiAppsApi%252flogin%252fgetApiToken%253futm_source%253dweixin%2526utm_medium%253dwebapp%2526utm_campaign%253dhuazhu%2526source%253dwechat&response_type=code&scope=snsapi_base&state=&connect_redirect=1 HTTP/1.1" 200 540
+[2018-08-01 18:52:30,597] [ERROR] Expecting value: line 1 column 1 (char 0)
