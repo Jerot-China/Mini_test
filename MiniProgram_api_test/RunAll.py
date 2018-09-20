@@ -12,10 +12,9 @@ import configparser
 
 
 # 获取日志文件路径（根据当天来生成文件夹）
-now = datetime.datetime.now().strftime("%Y%m%d")
 proDir = os.path.split(os.path.realpath(__file__))[0]
-log_path = os.path.join(proDir,"Log",now)
-log_file = os.path.join(proDir,"Log",now,'log.txt')
+log_path = os.path.join(proDir,"Log",datetime.datetime.now().strftime("%Y%m%d"))
+log_file = os.path.join(log_path,datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")+'.txt')
 
 # 判断日志文件是否存在  不存在则创建
 if not os.path.exists(log_path):
@@ -88,6 +87,7 @@ def run_test(testcase):
 		request_data = sheet.cell(i, 7).value
 		check_points = sheet.cell(i, 8).value.split(';')
 		correlations = sheet.cell(i, 9).value.split(';')
+		request_headers = sheet.cell(i, 3).value.split(';')
 
 		# 根据配置的host来获取excel中的host 分UAT和Production环境
 		if host == 'UAT':
@@ -99,34 +99,50 @@ def run_test(testcase):
 		reg1 = u"(.*)="
 		reg2 = u"=(.*)"
 
-		# 判断请求头
-		if sheet.cell(i, 3).value == '':
-			request_headers = defult_headers
-		else:
-			request_headers = sheet.cell(i, 3).value
 
+		# 如果不是第一行，则执行参数传递
 		if i == 0:
 			pass
 		else:
 			# 参数传递,不为空再继续
 			for correlation in correlations:
+
 				if correlations[0] == '':
 					continue
+				# 获取需要传递的key和value。组成correlation_dict
 				correlation_key = ''.join(re.findall(reg1, correlation)).replace('\'', '')
 				correlation_value = ''.join(re.findall(reg2, correlation))
+
+				# 如果value以xls开头，则去使用参数化方法
+				# if correlation_value.startswith("xls"):
+
 				correlation_dict[correlation_key] = correlation_value
 			for key in correlation_dict:
+				# 对参数进行替换
 				if request_data.find(key) > 0:
 					request_data = request_data.replace(key, '"' + correlation_dict[key] + '"')
 				if str(request_headers).find(key) > 0:
-					print(case_name)
-					request_headers = request_headers.replace(key, '"' + correlation_dict[key] + '"')
-					request_headers = eval(request_headers)
+					request_headers = str(request_headers).replace(key,  correlation_dict[key]).replace('[','').replace(']','').replace('\'','')
 				if request_address.find(key) > 0:
 					request_address = request_address.replace(key, '"' + correlation_dict[key] + '"')
 
-		request_url = request_host + request_address
+		# 请求头为空时，使用默认请求头
+		if sheet.cell(i, 3).value == '':
+			request_headers = defult_headers
+		# 不为空时，将该请求头加入默认请求中
+		else:
+			add_headers_key = ''.join(re.findall(reg1, request_headers))
+			add_headers_value = ''.join(re.findall(reg2, request_headers))
+			# if add_headers_value.startswith('$'):
+				
+			defult_headers[add_headers_key] = add_headers_value
+			request_headers = defult_headers
+			
 
+		
+
+
+		request_url = request_host + request_address
 				
 		# 进行接口测试
 		if request_method == 'get':
@@ -150,7 +166,8 @@ def run_test(testcase):
 				continue
 			correlation_key = ''.join(re.findall(reg1, correlation)).replace('\'', '')
 			correlation_value = ''.join(re.findall(reg2, correlation))
-			correlation_dict[correlation_key] = eval(correlation_value)
+			correlation_dict[correlation_key] = eval(correlation_value).replace('"','')
+			print(correlation_dict[correlation_key])
 
 		# 对结果进行断言
 		if check_points[0]:
