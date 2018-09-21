@@ -8,9 +8,10 @@ import os,sys
 import xlrd
 import datetime
 import re
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 import configparser
 
-
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 # 获取日志文件路径（根据当天来生成文件夹）
 proDir = os.path.split(os.path.realpath(__file__))[0]
 log_path = os.path.join(proDir,"Log",datetime.datetime.now().strftime("%Y%m%d"))
@@ -41,7 +42,7 @@ defult_headers = {
 				 (KHTML, like Gecko) Version/4.0 Chrome/53.0.2785.143 Crosswalk/24.53.595.0 XWEB/155 MMWEBSDK/21 Mobile\
 				  Safari/537.36 MicroMessenger/6.7.1321(0x26070030) NetType/WIFI Language/zh_CN MicroMessenger/6.7.1321(0x26070030)\
 				  NetType/WIFI Language/zh_CN",
-		"appcode": "e29185679c4c46a9a436852e246334b6",
+		"appcode": "400850322f464fad8b0193c865cd4dbf",
 		"Accept-Encoding": "gzip",
 		"charset": "utf-8",
 		"content-type": "application/json",
@@ -146,15 +147,13 @@ def run_test(testcase):
 				
 		# 进行接口测试
 		if request_method == 'get':
-			print(1,request_data)
-			print(type(request_headers))
 			result = requests.get(request_url,headers=request_headers,verify=False,allow_redirects=False)
 			try:
 				response = result.json()
 			except Exception as error:
 				logging.error(error)
 		elif request_method == 'post':
-			result = requests.post(request_url,headers=request_headers,data=request_data,verify=False,allow_redirects=False)
+			result = requests.post(request_url,headers=request_headers,data=request_data.encode("utf-8").decode("latin1"),verify=False,allow_redirects=False)
 			try:
 				response = result.json()
 			except Exception as error:
@@ -165,9 +164,11 @@ def run_test(testcase):
 			if correlations[0] == '':
 				continue
 			correlation_key = ''.join(re.findall(reg1, correlation)).replace('\'', '')
-			correlation_value = ''.join(re.findall(reg2, correlation))
-			correlation_dict[correlation_key] = eval(correlation_value).replace('"','')
-			print(correlation_dict[correlation_key])
+			correlation_value = ''.join(re.findall(reg2, correlation)).replace('response.headers','result.headers')
+			try:
+				correlation_dict[correlation_key] = eval(correlation_value).replace('"','')
+			except Exception as e:
+				logging.error("{}：{}".format(case_name, e))
 
 		# 对结果进行断言
 		if check_points[0]:
@@ -176,11 +177,17 @@ def run_test(testcase):
 				check_key = ''.join(re.findall(reg1, check_point))
 				check_value = ''.join(re.findall(reg2, check_point))
 				# 将字符串转为可执行代码
-				response_key = eval(check_key)
+				try:
+					response_key = eval(check_key)
+				except Exception as e:
+					logging.error("{}：KeyError{}".format(case_name, e))
+
 				try:
 					assert str(response_key) == str(check_value)
 				except AssertionError as AssertError:
 					logging.error("{}中,{} 不等于 {}".format(case_name, response_key, check_value))	
+				except Exception as e:
+					logging.error("{}：{}".format(case_name, e))
 		else:
 			print(case_name+',不需要断言')
 
